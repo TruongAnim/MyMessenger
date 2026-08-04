@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { DataSourceProvider, useDataSource } from './context/DataSourceContext'
 import ZipPicker from './components/ZipPicker'
 import HomePage from './pages/HomePage'
@@ -13,13 +13,13 @@ function Router() {
   if (status !== 'ready') return <ZipPicker />
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/conversation/:id" element={<ConversationDetail />} />
         <Route path="/conversation/:id/chat" element={<ConversationChat />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
