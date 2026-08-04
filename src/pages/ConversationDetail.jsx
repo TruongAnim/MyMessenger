@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, Cell
 } from 'recharts'
 import { useDataSource } from '../context/DataSourceContext'
+import SyncButton from '../components/SyncButton'
 import {
   computeStats, toChartData, topReactions,
   formatTimestamp, formatMonth, formatWeek
@@ -151,15 +152,18 @@ export default function ConversationDetail() {
               <span className="ml-2 text-slate-600">({totalDays} ngày)</span>
             </p>
           </div>
-          <Link
-            to={`/conversation/${encodeURIComponent(filename)}/chat`}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20 flex-shrink-0 mt-1"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            Xem hội thoại
-          </Link>
+          <div className="flex items-start gap-2 flex-shrink-0 mt-1">
+            <SyncButton conversation={conversation} />
+            <Link
+              to={`/conversation/${encodeURIComponent(filename)}/chat`}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Xem hội thoại
+            </Link>
+          </div>
         </div>
 
         {/* Overview cards */}
