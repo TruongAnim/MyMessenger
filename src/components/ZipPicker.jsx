@@ -2,10 +2,14 @@ import { useState, useRef, useCallback } from 'react'
 import { useDataSource } from '../context/DataSourceContext'
 
 export default function ZipPicker() {
-  const { status, progress, error, needsPassword, fileName, loadZip, reset } = useDataSource()
+  const {
+    status, progress, error, needsPassword, fileName,
+    restorable, supportsFileHandles,
+    loadZip, retryWithPassword, pickAndLoad, restoreLast, forgetLast,
+  } = useDataSource()
+
   const [dragging, setDragging] = useState(false)
   const [password, setPassword] = useState('')
-  const pendingFileRef = useRef(null)
   const inputRef = useRef(null)
 
   const handleFile = useCallback((file) => {
@@ -14,7 +18,6 @@ export default function ZipPicker() {
       alert('Vui lòng chọn file .zip được export từ Messenger.')
       return
     }
-    pendingFileRef.current = file
     setPassword('')
     loadZip(file)
   }, [loadZip])
@@ -25,12 +28,16 @@ export default function ZipPicker() {
     handleFile(e.dataTransfer.files?.[0])
   }, [handleFile])
 
+  // Dropped files carry no handle, so only the picker path can be remembered.
+  const openPicker = useCallback(() => {
+    if (supportsFileHandles) pickAndLoad()
+    else inputRef.current?.click()
+  }, [supportsFileHandles, pickAndLoad])
+
   const submitPassword = useCallback((e) => {
     e.preventDefault()
-    if (pendingFileRef.current && password) {
-      loadZip(pendingFileRef.current, password)
-    }
-  }, [loadZip, password])
+    if (password) retryWithPassword(password)
+  }, [retryWithPassword, password])
 
   const pct = progress.total ? Math.round(progress.loaded / progress.total * 100) : 0
 
@@ -81,7 +88,7 @@ export default function ZipPicker() {
               </button>
               <button
                 type="button"
-                onClick={reset}
+                onClick={openPicker}
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl transition-colors"
               >
                 Chọn file khác
@@ -90,11 +97,36 @@ export default function ZipPicker() {
           </form>
         ) : (
           <>
+            {restorable && (
+              <div className="mb-4 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+                <p className="text-xs text-slate-500 mb-2">Lần trước bạn đã mở</p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={restoreLast}
+                    className="flex-1 flex items-center gap-2.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl transition-colors min-w-0"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="truncate">Mở lại {restorable.name}</span>
+                  </button>
+                  <button
+                    onClick={forgetLast}
+                    title="Quên file này"
+                    className="text-xs text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0"
+                  >
+                    Quên
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
-              onClick={() => inputRef.current?.click()}
+              onClick={openPicker}
               className={`
                 border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors
                 ${dragging
@@ -107,7 +139,7 @@ export default function ZipPicker() {
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
               <p className="text-sm text-white font-medium mb-1">
-                Kéo thả file zip vào đây
+                {restorable ? 'Hoặc chọn file khác' : 'Kéo thả file zip vào đây'}
               </p>
               <p className="text-xs text-slate-500">hoặc bấm để chọn từ máy tính</p>
               <input
@@ -127,7 +159,9 @@ export default function ZipPicker() {
 
             <p className="text-xs text-slate-600 text-center mt-6 leading-relaxed">
               Dữ liệu được đọc trực tiếp trong trình duyệt, không tải lên máy chủ nào.<br />
-              Tải lại trang sẽ cần chọn file lại.
+              {supportsFileHandles
+                ? 'Trình duyệt chỉ ghi nhớ file bạn đã chọn, nội dung không được lưu lại.'
+                : 'Tải lại trang sẽ cần chọn file lại.'}
             </p>
           </>
         )}
