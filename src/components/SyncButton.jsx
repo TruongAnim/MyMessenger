@@ -2,12 +2,31 @@ import { useState, useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth, signInWithGoogle, signOutUser } from '../firebase/client'
 import { isConfigured } from '../firebase/config'
-import { syncConversation, slugify } from '../firebase/sync'
+import { syncConversation, rebuildRollup, slugify } from '../firebase/sync'
+
+/** "2024-01-15" → "15/01/2024" */
+function fmtDay(day) {
+  const [y, m, d] = day.split('-')
+  return `${d}/${m}/${y}`
+}
+
+function describeError(err) {
+  if (err.code === 'permission-denied') return 'Tài khoản này không có quyền ghi.'
+  if (err.code === 'auth/popup-closed-by-user') return 'Đã huỷ đăng nhập.'
+  // Firebase Auth only accepts sign-in from domains listed in the console, so
+  // this fires the first time the app runs anywhere other than localhost.
+  if (err.code === 'auth/unauthorized-domain') {
+    return `Domain ${window.location.hostname} chưa được Firebase cho phép đăng nhập. Thêm nó vào Authentication → Settings → Authorized domains.`
+  }
+  if (err.code === 'auth/popup-blocked') return 'Trình duyệt đã chặn popup đăng nhập.'
+  return err.message
+}
 
 export default function SyncButton({ conversation }) {
   const [user, setUser] = useState(null)
-  const [state, setState] = useState('idle') // idle | syncing | done | error
-  const [message, setMessage] = useState('')
+  const [state, setState] = useState('idle') // idle | syncing | rebuilding | done | error
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!isConfigured) return
@@ -17,29 +36,27 @@ export default function SyncButton({ conversation }) {
   if (!isConfigured) return null
 
   const docId = slugify(conversation.displayName)
+  const busy = state === 'syncing' || state === 'rebuilding'
 
-  const handleClick = async () => {
-    setState('syncing')
-    setMessage('')
+  /** Both actions need a signed-in owner and report the rebuilt document. */
+  const run = async (phase, action) => {
+    setState(phase)
+    setError('')
+    setResult(null)
     try {
       if (!auth().currentUser) await signInWithGoogle()
-      const id = await syncConversation(conversation)
+      setResult(await action())
       setState('done')
-      setMessage(id)
     } catch (err) {
+      setError(describeError(err))
       setState('error')
-      setMessage(
-        err.code === 'permission-denied'
-          ? 'Tài khoản này không có quyền ghi.'
-          : err.code === 'auth/popup-closed-by-user'
-            ? 'Đã huỷ đăng nhập.'
-            : err.message
-      )
     }
   }
 
+  const gaps = (result?.coverage?.length ?? 1) - 1
+
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-1.5">
       <div className="flex items-center gap-2">
         {user && (
           <button
@@ -50,10 +67,20 @@ export default function SyncButton({ conversation }) {
             {user.email}
           </button>
         )}
+
         <button
-          onClick={handleClick}
-          disabled={state === 'syncing'}
-          title={`Ghi vào document "${docId}"`}
+          onClick={() => run('rebuilding', () => rebuildRollup(docId, conversation))}
+          disabled={busy}
+          title="Đọc lại toàn bộ chunk đã lưu và ghi lại số liệu tổng — không cần mở zip"
+          className="px-3 py-2 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-60 flex-shrink-0"
+        >
+          {state === 'rebuilding' ? 'Đang tính...' : 'Tính lại'}
+        </button>
+
+        <button
+          onClick={() => run('syncing', () => syncConversation(conversation))}
+          disabled={busy}
+          title={`Ghi chunk rồi dựng lại document "${docId}"`}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-colors flex-shrink-0 ${
             state === 'done'
               ? 'bg-emerald-600 text-white'
@@ -70,11 +97,27 @@ export default function SyncButton({ conversation }) {
         </button>
       </div>
 
-      {state === 'done' && (
-        <p className="text-xs text-emerald-500">✓ {message}</p>
+      {state === 'done' && result && (
+        <div className="text-right space-y-0.5">
+          <p className="text-xs text-emerald-500">
+            ✓ {result.docId} · {result.totalMessages.toLocaleString('vi-VN')} tin ·{' '}
+            {result.totalDays.toLocaleString('vi-VN')} ngày · {result.chunkCount} chunk
+          </p>
+          {result.coverage?.length > 0 && (
+            <p className="text-xs text-slate-500">
+              {result.coverage.map(r => `${fmtDay(r.from)} – ${fmtDay(r.to)}`).join(' · ')}
+            </p>
+          )}
+          {gaps > 0 && (
+            <p className="text-xs text-amber-500 max-w-[300px]">
+              ⚠ Dữ liệu ngắt quãng ({gaps} lỗ hổng) — số liệu đang thiếu phần lịch sử ở giữa.
+            </p>
+          )}
+        </div>
       )}
+
       {state === 'error' && (
-        <p className="text-xs text-red-400 max-w-[280px] text-right">{message}</p>
+        <p className="text-xs text-red-400 max-w-[280px] text-right">{error}</p>
       )}
     </div>
   )
