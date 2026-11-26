@@ -127,4 +127,3 @@ React 19 · React Router 7 · Vite 6 · Tailwind CSS 4 · Recharts · Firebase (
 ## Ghi chú
 
 - `MY_NAME` trong [`src/pages/ConversationChat.jsx`](src/pages/ConversationChat.jsx) đang gán cứng, dùng để quyết định tin nào hiện bên phải. Đổi tên Facebook thì sửa ở đây
-- [`scripts/import-export.mjs`](scripts/import-export.mjs) (`npm run import`) là tàn dư từ kiến trúc cũ, ghi vào thư mục không còn tồn tại. Phần gộp của nó đã được thay bằng `zipMerger.js` — bản cũ khử trùng media theo tên nên thực tế không khử được gì
