@@ -4,6 +4,7 @@ import ZipPicker from './components/ZipPicker'
 import HomePage from './pages/HomePage'
 import ConversationDetail from './pages/ConversationDetail'
 import ConversationChat from './pages/ConversationChat'
+import MergePage from './pages/MergePage'
 
 function Router() {
   const { status } = useDataSource()
@@ -18,6 +19,7 @@ function Router() {
         <Route path="/" element={<HomePage />} />
         <Route path="/conversation/:id" element={<ConversationDetail />} />
         <Route path="/conversation/:id/chat" element={<ConversationChat />} />
+        <Route path="/merge" element={<MergePage />} />
       </Routes>
     </HashRouter>
   )

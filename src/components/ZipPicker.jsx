@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useDataSource } from '../context/DataSourceContext'
 
 export default function ZipPicker() {
@@ -162,6 +163,15 @@ export default function ZipPicker() {
               {supportsFileHandles
                 ? 'Trình duyệt chỉ ghi nhớ file bạn đã chọn, nội dung không được lưu lại.'
                 : 'Tải lại trang sẽ cần chọn file lại.'}
+            </p>
+
+            <p className="text-center mt-5">
+              <Link
+                to="/merge"
+                className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
+              >
+                Có nhiều file zip? Gộp lại thành một →
+              </Link>
             </p>
           </>
         )}

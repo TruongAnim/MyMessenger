@@ -4,18 +4,18 @@ import { BlobReader, ZipReader, TextWriter, BlobWriter } from '@zip.js/zip.js'
 // plus a `media/` subfolder. We locate that folder rather than assuming a fixed
 // path, since the zip may nest it under a wrapper directory.
 
-function isJunk(filename) {
+export function isJunk(filename) {
   const base = filename.split('/').pop()
   return filename.startsWith('__MACOSX/') || base.startsWith('.')
 }
 
-function dirOf(filename) {
+export function dirOf(filename) {
   const i = filename.lastIndexOf('/')
   return i === -1 ? '' : filename.slice(0, i + 1)
 }
 
 /** Pick the directory containing the most .json files — that's the thread folder. */
-function findMessagesDir(entries) {
+export function findMessagesDir(entries) {
   const counts = new Map()
   for (const entry of entries) {
     if (entry.directory || isJunk(entry.filename)) continue
