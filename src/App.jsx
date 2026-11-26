@@ -9,17 +9,20 @@ import MergePage from './pages/MergePage'
 function Router() {
   const { status } = useDataSource()
 
-  // Until a zip is loaded there is nothing to route to — including after a
-  // refresh on a deep link, since data lives only in memory.
-  if (status !== 'ready') return <ZipPicker />
+  // Data lives only in memory, so a view that reads it has nothing to show
+  // until a zip is open — including after a refresh on a deep link.
+  const gated = element => (status === 'ready' ? element : <ZipPicker />)
 
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/conversation/:id" element={<ConversationDetail />} />
-        <Route path="/conversation/:id/chat" element={<ConversationChat />} />
+        {/* Merging is what you do *before* opening a zip, so it stays ungated. */}
         <Route path="/merge" element={<MergePage />} />
+
+        <Route path="/" element={gated(<HomePage />)} />
+        <Route path="/conversation/:id" element={gated(<ConversationDetail />)} />
+        <Route path="/conversation/:id/chat" element={gated(<ConversationChat />)} />
+        <Route path="*" element={gated(<HomePage />)} />
       </Routes>
     </HashRouter>
   )
